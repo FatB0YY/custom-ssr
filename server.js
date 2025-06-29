@@ -12,13 +12,35 @@ async function createServer() {
   app.use(express.static("dist/client", { index: false }));
 
   app.use("*all", async (req, res, next) => {
+    // не req.get("host"), а original-host из-за реверс прокси
+    const url = new URL(
+      req.protocol + "://" + req.get("host") + req.originalUrl
+    );
+
     try {
       let template = fs.readFileSync(
         path.resolve(__dirname, "dist/client/index.html"),
         "utf-8"
       );
 
-      res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      const { render } = await import("./dist/server/entry-server.js");
+      try {
+        const { appHtml, data, meta } = await render(url);
+        const html = template
+          .replace("{{SERVER_STATE}}", JSON.stringify(data))
+          .replace("<!--META-->", meta)
+          .replace("<!--SSR-->", appHtml);
+
+        res.status(200).set({ "Content-Type": "text/html" }).end(html);
+      } catch (error) {
+        if (error.message === "Not found") {
+          res
+            .status(error.status)
+            .set({ "Content-Type": "text/html" })
+            .end(404);
+        }
+        res.status(500);
+      }
     } catch (e) {
       next(e);
     }

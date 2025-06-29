@@ -1,9 +1,22 @@
 import { useEffect, useState } from "react";
 import { getRoute } from "./router";
+import { StoreItem } from "./types";
 
-export function App() {
-  const [url, setUrl] = useState<URL>(new URL(location.href));
+export type TContext = {
+  url: URL;
+  data?: {
+    products: StoreItem[];
+  };
+};
+
+interface AppProps {
+  context: TContext;
+}
+
+export function App({ context }: AppProps) {
+  const [url, setUrl] = useState<URL>(context.url);
   const { Page } = getRoute(url);
+  const renderContext = { ...context, url };
 
   useEffect(() => {
     const onLocationChange = () => {
@@ -19,5 +32,5 @@ export function App() {
     };
   }, []);
 
-  return <Page url={url} />;
+  return <Page context={renderContext} />;
 }

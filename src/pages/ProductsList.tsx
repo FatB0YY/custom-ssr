@@ -1,14 +1,25 @@
 import { useEffect, useState } from "react";
-import { StoreItem } from "../types";
+import { TContext } from "../App";
 import { navigate } from "../router";
+import { StoreItem } from "../types";
 
-export function ProductList() {
-  const [products, setProducts] = useState<StoreItem[] | null>(null);
+interface ProductListProps {
+  context: TContext;
+}
 
+export function ProductList({ context }: ProductListProps) {
+  const [products, setProducts] = useState<StoreItem[] | undefined>(
+    context.data?.products
+  );
+
+  // нужен, так как пользователь может открыть страчнику с помощью перехода
+  // и она начнет рендерится на клиенте.
   useEffect(() => {
-    fetch("https://fakestoreapi.com/products?limit=6")
-      .then((res) => res.json())
-      .then(setProducts);
+    if (!products) {
+      fetch("https://fakestoreapi.com/products?limit=6")
+        .then((res) => res.json())
+        .then(setProducts);
+    }
   }, []);
 
   if (!products) return <p>Loading products list...</p>;
@@ -29,7 +40,12 @@ export function ProductList() {
             <p>
               <strong>${p.price}</strong>
             </p>
-            <a href={`/product/${p.id}`} onClick={(event) => onClick(event, p.id)}>View</a>
+            <a
+              href={`/product/${p.id}`}
+              onClick={(event) => onClick(event, p.id)}
+            >
+              View
+            </a>
           </div>
         ))}
       </div>
